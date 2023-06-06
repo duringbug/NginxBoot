@@ -3,11 +3,13 @@
  * @Author: 唐健峰
  * @Date: 2023-06-01 19:11:33
  * @LastEditors: ${author}
- * @LastEditTime: 2023-06-01 20:42:19
+ * @LastEditTime: 2023-06-06 20:43:14
  */
 package cloud.duringbug.server.proxy;
 import cloud.duringbug.conf.Config;
-import cloud.duringbug.server.FeedBack;
+import cloud.duringbug.server.ecnu.Protocol;
+import cloud.duringbug.utils.HttpRequest;
+import cloud.duringbug.utils.WhichProtocol;
 import cloud.duringbug.utils.XmlToClass;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -45,13 +47,17 @@ public class ProxyServer extends Thread{
         SocketAddress remoteAddr = socket.getRemoteSocketAddress(); 
         LOGGER.info("已连接: " + remoteAddr);
         // 监听读事件
-        channel.register(this.selector, SelectionKey.OP_WRITE);
+        channel.register(this.selector, SelectionKey.OP_READ);
     }
     private void read(SelectionKey key) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
         ByteBuffer buffer = ByteBuffer.allocate(BYTE_LENGTH);
         int numRead = -1;
-        numRead = channel.read(buffer);
+        try {
+            numRead = channel.read(buffer);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+        }
         if (numRead == -1) {
             Socket socket = channel.socket();
             SocketAddress remoteAddr = socket.getRemoteSocketAddress(); 
@@ -62,12 +68,24 @@ public class ProxyServer extends Thread{
         }
         byte[] data = new byte[numRead]; 
         System.arraycopy(buffer.array(), 0, data, 0, numRead); 
-        LOGGER.info("服务端已收到消息: " + new String(data));
+        String protocol=new String(data);
+        LOGGER.info("服务端已收到消息: ");
+        if(WhichProtocol.getProtocol(protocol).equals(Protocol.HTTP1)){
+            channel.register(this.selector, SelectionKey.OP_WRITE,HttpRequest.handleHttpRequest(channel, protocol)); 
+        }
+        // 构造要写入的数据
     }
-    private void write(SelectionKey key) throws IOException{
-        FeedBack feedBack=new FeedBack();
-        feedBack.HTTP1_1(key);
-        key.interestOps(SelectionKey.OP_READ);
+    private void write(SelectionKey key) throws IOException {
+        LOGGER.info("进入write方法");
+        SocketChannel channel = (SocketChannel) key.channel();
+        String response = (String) key.attachment();
+        if(response==null){
+            return;
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(response.getBytes());
+        while (buffer.hasRemaining()) {
+            channel.write(buffer);
+        }
     }
 
     public void startServer() throws IOException{
@@ -99,8 +117,10 @@ public class ProxyServer extends Thread{
                     this.accept(key);
                 }else if (key.isReadable()){
                     this.read(key);
-                }else if (key.isWritable()){
+                }
+                else if (key.isWritable()){
                     this.write(key);
+                    key.channel().register(this.selector, SelectionKey.OP_READ);
                 }
             }
         }
