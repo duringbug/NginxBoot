@@ -7,7 +7,7 @@
  */
 package cloud.duringbug.utils;
 
-import cloud.duringbug.server.ecnu.Protocol;
+import cloud.duringbug.server.Enum.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

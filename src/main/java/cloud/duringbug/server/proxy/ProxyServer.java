@@ -7,7 +7,7 @@
  */
 package cloud.duringbug.server.proxy;
 import cloud.duringbug.conf.Config;
-import cloud.duringbug.server.ecnu.Protocol;
+import cloud.duringbug.server.Enum.Protocol;
 import cloud.duringbug.utils.HttpRequest;
 import cloud.duringbug.utils.WhichProtocol;
 import cloud.duringbug.utils.XmlToClass;

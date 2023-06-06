@@ -3,7 +3,7 @@
  * @Author: 唐健峰
  * @Date: 2023-06-01 21:25:58
  * @LastEditors: ${author}
- * @LastEditTime: 2023-06-06 21:00:37
+ * @LastEditTime: 2023-06-06 21:35:32
  */
 package cloud.duringbug.utils;
 import java.io.IOException;
@@ -43,11 +43,11 @@ public class HttpRequest {
                         LOGGER.info("响应状态码：" + httpResponse.code());
 
                         String response = httpResponse.body().string();
-                        // byte[] responseBytes = response.getBytes("UTF-8");
-                        // int contentLength = responseBytes.length;
+                        byte[] responseBytes = response.getBytes("UTF-8");
+                        int contentLength = responseBytes.length;
                         response = "HTTP/1.1 " + httpResponse.code() + " "+httpResponse.message()+"\n" +
                         "Content-Type: "+httpResponse.header("Content-Type")+";charset=UTF-8\r\n" +
-                        "Content-Length: " + httpResponse.header("Content-Length") + "\r\n\r\n" +
+                        "Content-Length: " + contentLength + "\r\n\r\n" +
                         response;
 
                         // LOGGER.info("响应结果：" + response);
