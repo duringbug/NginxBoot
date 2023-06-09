@@ -1,0 +1,44 @@
+<!--
+ * @Description: 
+ * @Author: 唐健峰
+ * @Date: 2023-06-09 08:48:48
+ * @LastEditors: ${author}
+ * @LastEditTime: 2023-06-09 09:45:12
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>blender</title>
+    <script src="js/three/build/three.js"></script>
+    <script type="module" src="js/three/examples/jsm/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+    <script>
+        // 创建场景和渲染器
+        var scene = new THREE.Scene();
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 创建相机
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        // 创建GLTFLoader实例并加载glTF文件
+        var loader = new THREE.GLTFLoader();
+        loader.load('blender/lowpoly-castle.gltf', function (gltf) {
+            scene.add(gltf.scene);
+        });
+
+        // 渲染循环
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

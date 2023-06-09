@@ -3,9 +3,9 @@
  * @Author: 唐健峰
  * @Date: 2023-06-01 17:07:41
  * @LastEditors: ${author}
- * @LastEditTime: 2023-06-02 16:27:59
+ * @LastEditTime: 2023-06-09 10:41:20
  */
-import cloud.duringbug.server.proxy.ProxyServer;
+import cloud.duringbug.start.NgxServer;
 import cloud.duringbug.utils.Logo;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ public class NgxBoot {
     public static void main(String[] args) throws IOException {
         LOGGER.info("NginxBoot开始启动");
         Logo.printLogo();
-        ProxyServer proxyServer=new ProxyServer();
-        proxyServer.run();
+        NgxServer ngxServer=new NgxServer();
+        ngxServer.run();
     }
 }

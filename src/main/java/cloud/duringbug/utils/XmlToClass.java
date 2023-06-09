@@ -3,7 +3,7 @@
  * @Author: 唐健峰
  * @Date: 2023-06-01 18:41:42
  * @LastEditors: ${author}
- * @LastEditTime: 2023-06-01 18:48:39
+ * @LastEditTime: 2023-06-06 23:19:45
  */
 package cloud.duringbug.utils;
 
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class XmlToClass {
     private static final Logger LOGGER = LoggerFactory.getLogger(XmlToClass.class);
     public static Config getConfig() throws IOException{
-        InputStream in = XmlToClass.class.getResourceAsStream("/config.xml");
+        InputStream in = XmlToClass.class.getResourceAsStream("/ngxboot.xml");
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
         int length;
@@ -37,7 +37,7 @@ public class XmlToClass {
         try {
             config=(Config) xs.fromXML(xml);
         } catch (Exception e) {
-            LOGGER.error("config.xml格式出现错误: "+e.getMessage());
+            LOGGER.error("ngxboot.xml格式出现错误: "+e.getMessage());
             return null;
         }
         return config;

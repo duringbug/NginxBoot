@@ -1,0 +1,7 @@
+package cloud.duringbug.server.Interface;
+import java.io.IOException;
+
+public interface ProxyServer {
+    public void startServer() throws IOException;
+    public void run();
+}

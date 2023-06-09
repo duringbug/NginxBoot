@@ -6,7 +6,7 @@
  * @LastEditTime: 2023-06-01 19:59:28
  */
 
-import cloud.duringbug.server.proxy.ProxyServer;
+import cloud.duringbug.server.proxy.NIOProxyServer;
 import cloud.duringbug.utils.XmlToClass;
 import java.io.IOException;
 import org.junit.Test;
@@ -30,7 +30,7 @@ public class MyTest {
     }
     @Test
     public void testProxyServer() throws IOException{
-        ProxyServer proxyServer=new ProxyServer();
+        NIOProxyServer proxyServer=new NIOProxyServer();
         proxyServer.run();
     }
 }
