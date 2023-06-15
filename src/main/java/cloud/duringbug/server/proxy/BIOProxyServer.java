@@ -3,7 +3,7 @@
  * @Author: 唐健峰
  * @Date: 2023-06-08 16:32:56
  * @LastEditors: ${author}
- * @LastEditTime: 2023-06-09 12:17:52
+ * @LastEditTime: 2023-06-15 14:05:07
  */
 package cloud.duringbug.server.proxy;
 
@@ -37,7 +37,7 @@ public class BIOProxyServer implements ProxyServer{
     private static final Logger LOGGER = LoggerFactory.getLogger(BIOProxyServer.class);
     @Override
     public void startServer() throws IOException {
-        ServerSocket serverSocket=new ServerSocket(XmlToClass.getConfig().getPort());
+        ServerSocket serverSocket=new ServerSocket(XmlToClass.getConfig("/ngxboot.xml").getPort());
         AtomicBoolean shutdown = new AtomicBoolean(false);
         while(!shutdown.get()){
             Socket client = serverSocket.accept();
@@ -55,7 +55,7 @@ public class BIOProxyServer implements ProxyServer{
                             break;
                         }
                     }
-                    if(request.startsWith("GET")||request.startsWith("POST")){
+                    if(request.startsWith("GET")){
                         String uri="";
                         int firstSpaceIndex = request.indexOf(' ');
                         int secondSpaceIndex = request.indexOf(' ', firstSpaceIndex + 1);
@@ -68,20 +68,38 @@ public class BIOProxyServer implements ProxyServer{
                                 Thread.sleep(500);
                                 return;
                             }
-                        } else {
+                        }else {
                             LOGGER.error("非http请求");
                         }
-
                         OutputStream out=client.getOutputStream();
                         LOGGER.info("<"+client.getInetAddress()+">的请求为"+request);
-                        out.write(httpProcessor(request));
+                        out.write(httpGetProcessor(request));
+                    }else if(request.startsWith("POST")){
+                        String uri="";
+                        int firstSpaceIndex = request.indexOf(' ');
+                        int secondSpaceIndex = request.indexOf(' ', firstSpaceIndex + 1);
+                        if (firstSpaceIndex != -1 && secondSpaceIndex != -1) {
+                            uri = request.substring(firstSpaceIndex + 1, secondSpaceIndex);
+                            if(uri.equals("/shutdown")){
+                                shutdown.set(true);
+                                client.close();
+                                LOGGER.info("服务端端退出");
+                                Thread.sleep(500);
+                                return;
+                            }
+                        }else {
+                            LOGGER.error("非http请求");
+                        }
+                        OutputStream out=client.getOutputStream();
+                        LOGGER.info("<"+client.getInetAddress()+">的请求为"+request);
+                        out.write(httpGetProcessor(request));
                     }
                     client.close();
                     LOGGER.info("客户端退出");
                 } catch (Exception e) {
                     LOGGER.error(e.getMessage());
                 }
-            }).start();;
+            }).start();
         }
     }
 
@@ -90,10 +108,54 @@ public class BIOProxyServer implements ProxyServer{
         try {
             this.startServer();
         } catch (IOException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error("server停止服务");
         }
     }
-    private byte[] httpProcessor(String request) throws IOException{
+    private byte[] httpPostProcessor(String request) throws IOException{
+        String uri="";
+        int firstSpaceIndex = request.indexOf(' ');
+        int secondSpaceIndex = request.indexOf(' ', firstSpaceIndex + 1);
+        if (firstSpaceIndex != -1 && secondSpaceIndex != -1) {
+            uri = request.substring(firstSpaceIndex + 1, secondSpaceIndex);
+        } else {
+            LOGGER.error("非http请求");
+        }
+        Map params=getRequestParams(uri);
+        if(!params.isEmpty()){
+            uri=uri.substring(0, uri.indexOf("?"));
+        }
+        byte[] body;
+        String head="HTTP/1.1 200 OK\n";
+        try {
+            if(uri.equals("/")){
+                throw new FileNotFoundException();
+            }
+            InputStream in=BIOProxyServer.class.getClassLoader().getResourceAsStream("static"+uri);
+            body=in.readAllBytes();
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+            body= BIOProxyServer.class.getClassLoader().getResourceAsStream("static/404.html").readAllBytes();
+            head="HTTP/1.1 404 Not Found\n";
+        }
+        String contentType="Content-Type: "+getContentType(uri)+";charset=UTF-8\r\n";
+        String contentLength="Content-Length: "+body.length+"\r\n\r\n";
+          // 使用 ByteArrayOutputStream 构建响应字节数组
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            // 写入头部信息
+        outputStream.write(head.getBytes());
+        outputStream.write(contentType.getBytes());
+        outputStream.write(contentLength.getBytes());
+
+        // 写入内容部分
+        outputStream.write(body);
+
+        // 返回最终的字节数组
+        return outputStream.toByteArray();
+    }
+    private byte[] httpGetProcessor(String request) throws IOException{
+        if(request.startsWith("http://")){
+            request=request.substring(7);
+        }
         String uri="";
         int firstSpaceIndex = request.indexOf(' ');
         int secondSpaceIndex = request.indexOf(' ', firstSpaceIndex + 1);

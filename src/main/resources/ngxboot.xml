@@ -2,5 +2,5 @@
 <config>
     <port>8081</port>
     <password>123456</password>
-    <proxyType>BIOServer</proxyType>
+    <proxyType>FastServer</proxyType>
 </config>

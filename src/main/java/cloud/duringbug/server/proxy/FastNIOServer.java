@@ -1,11 +1,12 @@
 /*
  * @Description: 
  * @Author: 唐健峰
- * @Date: 2023-06-01 19:11:33
+ * @Date: 2023-06-15 14:55:01
  * @LastEditors: ${author}
- * @LastEditTime: 2023-06-15 15:16:34
+ * @LastEditTime: 2023-06-15 15:41:46
  */
 package cloud.duringbug.server.proxy;
+
 import cloud.duringbug.conf.Config;
 import cloud.duringbug.server.Enum.Protocol;
 import cloud.duringbug.server.Interface.ProxyServer;
@@ -29,16 +30,13 @@ import org.slf4j.LoggerFactory;
 
 
 
-
-
-
-public class NIOProxyServer extends Thread implements ProxyServer{
+public class FastNIOServer implements ProxyServer{
     Config config;
-    private static final Logger LOGGER = LoggerFactory.getLogger(NIOProxyServer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FastNIOServer.class);
     private static int BYTE_LENGTH = 0x6f6f6f;
     private Selector selector;
-    public NIOProxyServer() throws IOException{
-        this.config=XmlToClass.getConfig("/ngxboot.xml");
+    public FastNIOServer(String configPath) throws IOException{
+        this.config=XmlToClass.getConfig(configPath);
     }
     private void accept(SelectionKey key) throws IOException { 
         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel(); 
@@ -50,7 +48,7 @@ public class NIOProxyServer extends Thread implements ProxyServer{
         // 监听读事件
         channel.register(this.selector, SelectionKey.OP_READ);
     }
-    private void read(SelectionKey key) throws IOException {
+    private void read(SelectionKey key) throws IOException, InterruptedException {
         SocketChannel channel = (SocketChannel) key.channel();
         ByteBuffer buffer = ByteBuffer.allocate(BYTE_LENGTH);
         int numRead = -1;
@@ -72,7 +70,7 @@ public class NIOProxyServer extends Thread implements ProxyServer{
         String protocol=new String(data);
         LOGGER.info("服务端已收到消息: ");
         if(WhichProtocol.getProtocol(protocol).equals(Protocol.HTTP1)){
-            channel.register(this.selector, SelectionKey.OP_WRITE,HttpRequest.handleHttpRequest(channel, protocol)); 
+            channel.register(this.selector, SelectionKey.OP_WRITE,HttpRequest.localHandleHttpRequest(channel, protocol)); 
         }
         // 构造要写入的数据
     }
@@ -81,6 +79,13 @@ public class NIOProxyServer extends Thread implements ProxyServer{
         SocketChannel channel = (SocketChannel) key.channel();
         String response = (String) key.attachment();
         if(response==null){
+            return;
+        }
+        if(response.equals("stop")){
+            LOGGER.info("服务端准备关闭");
+            channel.close();
+            key.cancel();
+            selector.close();
             return;
         }
         ByteBuffer buffer = ByteBuffer.wrap(response.getBytes());
@@ -95,17 +100,18 @@ public class NIOProxyServer extends Thread implements ProxyServer{
     }
 
     @Override
-    public void startServer() throws IOException{
+    public void startServer() throws IOException, InterruptedException{
         this.selector = Selector.open();
         // ServerSocketChannel与serverSocket类似
-        ServerSocketChannel serverSocket = ServerSocketChannel.open(); 
+        ServerSocketChannel serverSocket = ServerSocketChannel.open();
         serverSocket.socket().bind(new InetSocketAddress(config.getPort()));
         // 设置无阻塞
         serverSocket.configureBlocking(false);
         // 将channel注册到selector 
         serverSocket.register(this.selector, SelectionKey.OP_ACCEPT); 
         LOGGER.info("服务端已启动");
-        for (;;) {
+        Boolean shutdown=false;
+        while(!shutdown) {
             // 操作系统提供的非阻塞I/O
             int readyCount = selector.select(); 
             if (readyCount == 0) {
@@ -127,7 +133,13 @@ public class NIOProxyServer extends Thread implements ProxyServer{
                 }
                 else if (key.isWritable()){
                     this.write(key);
-                    key.channel().register(this.selector, SelectionKey.OP_READ);
+                    try {
+                        key.channel().register(this.selector, SelectionKey.OP_READ);
+                    } catch (Exception e) {
+                        LOGGER.info("服务端已关闭");
+                        shutdown=true;
+                    }
+                   
                 }
             }
         }
@@ -136,7 +148,7 @@ public class NIOProxyServer extends Thread implements ProxyServer{
     public void run() {
         try {
             this.startServer();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

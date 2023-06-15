@@ -3,7 +3,7 @@
  * @Author: 唐健峰
  * @Date: 2023-06-01 18:41:42
  * @LastEditors: ${author}
- * @LastEditTime: 2023-06-06 23:19:45
+ * @LastEditTime: 2023-06-15 12:24:09
  */
 package cloud.duringbug.utils;
 
@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory;
 
 public class XmlToClass {
     private static final Logger LOGGER = LoggerFactory.getLogger(XmlToClass.class);
-    public static Config getConfig() throws IOException{
-        InputStream in = XmlToClass.class.getResourceAsStream("/ngxboot.xml");
+    public static Config getConfig(String path) throws IOException{
+        InputStream in = XmlToClass.class.getResourceAsStream(path);
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
         int length;
